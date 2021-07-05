@@ -1,127 +1,26 @@
-#include <iostream>
-#include <fstream>
-#include <stdio.h>
-#include <time.h>
-#include <functional>
-#include <SFML/Graphics.hpp>
-#include <map>
+#include "chip8.h"
 
-uint8_t fontset[80] =
-    {
-        0xF0, 0x90, 0x90, 0x90, 0xF0, // 0
-        0x20, 0x60, 0x20, 0x20, 0x70, // 1
-        0xF0, 0x10, 0xF0, 0x80, 0xF0, // 2
-        0xF0, 0x10, 0xF0, 0x10, 0xF0, // 3
-        0x90, 0x90, 0xF0, 0x10, 0x10, // 4
-        0xF0, 0x80, 0xF0, 0x10, 0xF0, // 5
-        0xF0, 0x80, 0xF0, 0x90, 0xF0, // 6
-        0xF0, 0x10, 0x20, 0x40, 0x40, // 7
-        0xF0, 0x90, 0xF0, 0x90, 0xF0, // 8
-        0xF0, 0x90, 0xF0, 0x10, 0xF0, // 9
-        0xF0, 0x90, 0xF0, 0x90, 0x90, // A
-        0xE0, 0x90, 0xE0, 0x90, 0xE0, // B
-        0xF0, 0x80, 0x80, 0x80, 0xF0, // C
-        0xE0, 0x90, 0x90, 0x90, 0xE0, // D
-        0xF0, 0x80, 0xF0, 0x80, 0xF0, // E
-        0xF0, 0x80, 0xF0, 0x80, 0x80  // F
-};
-sf::Keyboard::Key keys[] =
-    {
-        sf::Keyboard::X,
-        sf::Keyboard::Num1,
-        sf::Keyboard::Num2,
-        sf::Keyboard::Num3,
-        sf::Keyboard::Q,
-        sf::Keyboard::W,
-        sf::Keyboard::E,
-        sf::Keyboard::A,
-        sf::Keyboard::S,
-        sf::Keyboard::D,
-        sf::Keyboard::Z,
-        sf::Keyboard::C,
-        sf::Keyboard::Num4,
-        sf::Keyboard::R,
-        sf::Keyboard::F,
-        sf::Keyboard::V
-
-};
-class chip8
-{
-public:
-    chip8(const std::string path);
-    uint8_t get_x(uint16_t);
-    uint8_t get_y(uint16_t);
-    void execute();
-    void draw(sf::Uint8 *pixels);
-    void i_0xee();
-    void i_1nnn(uint16_t);
-    void i_2nnn(uint16_t);
-    void i_3xkk(uint16_t);
-    void i_4xkk(uint16_t);
-    void i_5xy0(uint16_t);
-    void i_6xkk(uint16_t);
-    void i_7xkk(uint16_t);
-    void i_8xy0(uint16_t);
-    void i_8xy1(uint16_t);
-    void i_8xy2(uint16_t);
-    void i_8xy3(uint16_t);
-    void i_8xy4(uint16_t);
-    void i_8xy5(uint16_t);
-    void i_8xy6(uint16_t);
-    void i_8xy7(uint16_t);
-    void i_8xye(uint16_t);
-    void i_9xy0(uint16_t);
-    void i_annn(uint16_t);
-    void i_bnnn(uint16_t);
-    void i_cxkk(uint16_t);
-    void i_dxyn(uint16_t);
-    void i_ex9e(uint16_t);
-    void i_exa1(uint16_t);
-
-    void i_fx07(uint16_t);
-    void i_fx0a(uint16_t);
-    void i_fx15(uint16_t);
-    void i_fx1e(uint16_t);
-    void i_fx29(uint16_t);
-    void i_fx33(uint16_t);
-    void i_fx55(uint16_t);
-    void i_fx65(uint16_t);
-    bool draw_flag = true;
-    char wait_key = -1;
-
-    uint8_t dt, st;
-    uint8_t v[16];
-
-private:
-    void clear_screen();
-    bool update_pc = true;
-    uint8_t ram[4096];
-    uint16_t stack[16];
-    uint16_t pc, sp;
-    uint16_t I;
-    uint8_t gfx[32][64];
-    std::map<uint16_t, std::function<void(uint16_t)>> opcodes;
-};
 chip8::chip8(const std::string path)
 {
     std::ifstream rom(path);
+    if (!rom.is_open())
+    {
+        std::cerr << "cannot find the rom\n";
+        exit(1);
+    }
     rom.seekg(0, std::ios::end);
     size_t length = rom.tellg();
     rom.seekg(0, std::ios::beg);
     rom.read((char *)(ram + 512), length);
     int k = 0;
-    int s = 0;
     for (int i = 0; i < int(length); i++)
     {
-        if(k >= 15)
+        if (k >= 15)
         {
             printf("\n");
             k = 0;
         }
         printf("0x%X,", ram[512 + i]);
-       
-        s++;
-        k++;
     }
 
     for (int i = 0; i < 80; i++)
@@ -138,7 +37,6 @@ chip8::chip8(const std::string path)
     pc = 512;
     sp = 0;
     I = 0;
-      printf("\n%x\n", ram[512]);
     opcodes[0x1] = std::bind(&chip8::i_1nnn, this, std::placeholders::_1);
     opcodes[0x2] = std::bind(&chip8::i_2nnn, this, std::placeholders::_1);
     opcodes[0x3] = std::bind(&chip8::i_3xkk, this, std::placeholders::_1);
@@ -165,6 +63,7 @@ chip8::chip8(const std::string path)
     opcodes[0xF07] = std::bind(&chip8::i_fx07, this, std::placeholders::_1);
     opcodes[0xF0A] = std::bind(&chip8::i_fx0a, this, std::placeholders::_1);
     opcodes[0xF15] = std::bind(&chip8::i_fx15, this, std::placeholders::_1);
+    opcodes[0xF18] = std::bind(&chip8::i_fx18, this, std::placeholders::_1);
     opcodes[0xF1E] = std::bind(&chip8::i_fx1e, this, std::placeholders::_1);
     opcodes[0xF29] = std::bind(&chip8::i_fx29, this, std::placeholders::_1);
     opcodes[0xF33] = std::bind(&chip8::i_fx33, this, std::placeholders::_1);
@@ -179,9 +78,9 @@ void chip8::draw(sf::Uint8 *pixels)
         {
             if (gfx[i][j] == 1)
             {
-                pixels[(j + i * 64) * 4] = 255;
+                pixels[(j + i * 64) * 4] = 0;
                 pixels[(j + i * 64) * 4 + 1] = 255;
-                pixels[(j + i * 64) * 4 + 2] = 255;
+                pixels[(j + i * 64) * 4 + 2] = 0;
                 pixels[(j + i * 64) * 4 + 3] = 255;
             }
             else
@@ -314,7 +213,7 @@ void chip8::i_annn(uint16_t opcode)
 }
 void chip8::i_bnnn(uint16_t opcode)
 {
-    pc = (opcode & 0xFFF) + v[0];
+    pc = ((opcode & 0xFFF) + v[0]) & 0xFFF;
 }
 void chip8::i_cxkk(uint16_t opcode)
 {
@@ -323,7 +222,6 @@ void chip8::i_cxkk(uint16_t opcode)
 }
 void chip8::i_dxyn(uint16_t opcode)
 {
-
     draw_flag = true;
     uint8_t x = v[get_x(opcode)];
     uint8_t y = v[get_y(opcode)];
@@ -351,7 +249,7 @@ void chip8::i_ex9e(uint16_t opcode)
     auto key = keys[v[get_x(opcode)]];
     if (sf::Keyboard::isKeyPressed(key))
     {
-        pc += 2;
+        pc = (pc + 2) & 0xFFF;
     }
 }
 void chip8::i_exa1(uint16_t opcode)
@@ -359,7 +257,7 @@ void chip8::i_exa1(uint16_t opcode)
     auto key = keys[v[get_x(opcode)]];
     if (!sf::Keyboard::isKeyPressed(key))
     {
-        pc += 2;
+        pc = (pc + 2) & 0xFFF;
     }
 }
 void chip8::i_fx07(uint16_t opcode)
@@ -371,6 +269,10 @@ void chip8::i_fx0a(uint16_t opcode)
     wait_key = get_x(opcode);
 }
 void chip8::i_fx15(uint16_t opcode)
+{
+    dt = v[get_x(opcode)];
+}
+void chip8::i_fx18(uint16_t opcode)
 {
     dt = v[get_x(opcode)];
 }
@@ -409,7 +311,6 @@ void chip8::execute()
     uint8_t mn = opcode >> 12;  //nibble mas significativo
     uint8_t ln = opcode & 0xF;  //nibble menos significativo
     uint8_t lb = opcode & 0xFF; //byte menos significativo
-    uint16_t k;
     pc = (pc + 2) & 0xFFF;
     if (opcode == 0xEE)
     {
@@ -424,96 +325,16 @@ void chip8::execute()
     switch (mn)
     {
     case 8:
-        k = (uint16_t)(mn << 4) | (uint16_t)ln;
-        if (opcodes.find(k) != opcodes.end())
-        {
-            opcodes[k](opcode);
-        }
-        else
-            printf("%X\n", k);
+        opcodes[(mn << 4) | ln](opcode);
         break;
     case 0xE:
-        k = (uint16_t)lb;
-        if (opcodes.find(k) != opcodes.end())
-        {
-            opcodes[k](opcode);
-        }
-        else
-            printf("%X\n", k);
+        opcodes[lb](opcode);
         break;
     case 0xF:
-        k = (uint16_t)(mn << 8) | (uint16_t)lb;
-        if (opcodes.find(k) != opcodes.end())
-        {
-            opcodes[k](opcode);
-        }
-        else
-            printf("%X\n", k);
+        opcodes[(mn << 8) | lb](opcode);
         break;
     default:
-        k = (uint16_t)mn;
-        if (opcodes.find(k) != opcodes.end())
-        {
-            opcodes[k](opcode);
-        }
-        else
-            printf("%X\n", k);
+        opcodes[mn](opcode);
         break;
     }
-}
-int main()
-{
-
-    sf::RenderWindow window(sf::VideoMode(640, 320), "chip 8");
-    sf::Uint8 *pixels = new sf::Uint8[64 * 32 * 4];
-    sf::Texture texture;
-    sf::Sprite sprite;
-    texture.create(64, 32);
-    sprite.setScale(10, 10);
-    sprite.setTexture(texture);
-    window.setVerticalSyncEnabled(true);
-    srand(time(nullptr));
-    chip8 ch8("c8games/INVADERS");
-    while (window.isOpen())
-    {
-        sf::Event ev;
-        while (window.pollEvent(ev))
-        {
-            if (ev.type == sf::Event::Closed)
-            {
-                window.close();
-                break;
-            }
-        }
-        if (ch8.wait_key == -1)
-        {
-            ch8.execute();
-        }
-        else
-        {
-            for (int k = 0; k < 16; k++)
-            {
-                if (sf::Keyboard::isKeyPressed(keys[k]))
-                {
-                    ch8.v[ch8.wait_key] = k;
-                    ch8.wait_key = -1;
-                    break;
-                }
-            }
-        }
-        if (ch8.dt)
-        {
-            ch8.dt--;
-        }
-        if (ch8.draw_flag)
-        {
-            ch8.draw(pixels);
-            texture.update(pixels);
-            ch8.draw_flag = false;
-            window.clear();
-            window.draw(sprite);
-            window.display();
-        }
-    }
-    return 0;
 }
