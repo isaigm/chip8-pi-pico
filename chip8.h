@@ -28,22 +28,22 @@ static uint8_t fontset[80] =
 };
 static sf::Keyboard::Key keys[] =
     {
-        sf::Keyboard::X,
-        sf::Keyboard::Num1,
-        sf::Keyboard::Num2,
-        sf::Keyboard::Num3,
-        sf::Keyboard::Q,
-        sf::Keyboard::W,
-        sf::Keyboard::E,
-        sf::Keyboard::A,
-        sf::Keyboard::S,
-        sf::Keyboard::D,
-        sf::Keyboard::Z,
-        sf::Keyboard::C,
-        sf::Keyboard::Num4,
-        sf::Keyboard::R,
-        sf::Keyboard::F,
-        sf::Keyboard::V
+        sf::Keyboard::Key::X,
+        sf::Keyboard::Key::Num1,
+        sf::Keyboard::Key::Num2,
+        sf::Keyboard::Key::Num3,
+        sf::Keyboard::Key::Q,
+        sf::Keyboard::Key::W,
+        sf::Keyboard::Key::E,
+        sf::Keyboard::Key::A,
+        sf::Keyboard::Key::S,
+        sf::Keyboard::Key::D,
+        sf::Keyboard::Key::Z,
+        sf::Keyboard::Key::C,
+        sf::Keyboard::Key::Num4,
+        sf::Keyboard::Key::R,
+        sf::Keyboard::Key::F,
+        sf::Keyboard::Key::V
 
 };
 class chip8
@@ -53,7 +53,7 @@ public:
     uint8_t get_x(uint16_t);
     uint8_t get_y(uint16_t);
     void execute();
-    void draw(sf::Uint8 *pixels);
+    void draw(uint8_t *pixels);
     void i_0xee();
     void i_1nnn(uint16_t);
     void i_2nnn(uint16_t);
@@ -91,6 +91,7 @@ public:
     int wait_key = -1;
 
     uint8_t dt, st;
+    void update_timers();
     uint8_t v[16];
 
 private:

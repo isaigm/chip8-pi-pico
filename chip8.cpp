@@ -12,17 +12,6 @@ chip8::chip8(const std::string path)
     size_t length = rom.tellg();
     rom.seekg(0, std::ios::beg);
     rom.read((char *)(ram + 512), length);
-    int k = 0;
-    for (int i = 0; i < int(length); i++)
-    {
-        if (k >= 15)
-        {
-            printf("\n");
-            k = 0;
-        }
-        printf("0x%X,", ram[512 + i]);
-    }
-
     for (int i = 0; i < 80; i++)
     {
         ram[i + 0x50] = fontset[i];
@@ -70,7 +59,7 @@ chip8::chip8(const std::string path)
     opcodes[0xF55] = std::bind(&chip8::i_fx55, this, std::placeholders::_1);
     opcodes[0xF65] = std::bind(&chip8::i_fx65, this, std::placeholders::_1);
 }
-void chip8::draw(sf::Uint8 *pixels)
+void chip8::draw(uint8_t *pixels)
 {
     for (int i = 0; i < 32; i++)
     {
@@ -336,5 +325,16 @@ void chip8::execute()
     default:
         opcodes[mn](opcode);
         break;
+    }
+}
+void chip8::update_timers()
+{
+    if (dt > 0)
+    {
+        dt--;
+    }
+    if (st > 0)
+    {
+        st--;
     }
 }
